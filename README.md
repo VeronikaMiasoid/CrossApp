@@ -75,3 +75,34 @@ dotnet publish src/Cli -c Release -r osx-arm64 --self-contained false
 ## Середовище
 
 .NET SDK 10.0, macOS (Apple Silicon, RID osx-arm64).
+
+## Лабораторна 3: імпорт даних (CSV / JSON)
+
+З цього тижня `dotnet run --project src/Cli` запускає **імпорт**, а інформація про середовище
+доступна з прапорцем `--env` (і `--env --json`).
+
+```
+dotnet run --project src/Cli                          # data/sample.csv
+dotnet run --project src/Cli -- data/sample.json      # JSON: імпортер обирається за розширенням
+dotnet run --project src/Cli -- data/nope.csv         # неіснуючий файл: повідомлення + код виходу 1
+dotnet run --project src/Cli -- --mixed               # data/mixed.csv: рядки P; (товар) і C; (клієнт)
+dotnet run --project src/Cli -- --env                 # середовище (лабораторна 2)
+```
+
+### Формат `data/sample.csv`
+
+- роздільник — крапка з комою `;` (константа `Separator` в `ProductCsvImporter`);
+- перший рядок — заголовок `id;name;price` (розпізнається за початком `id`), також допустимий файл без заголовка;
+- рядки, що починаються з `#`, і порожні рядки пропускаються;
+- кодування UTF-8;
+- ціна — десяткова **крапка** (`12.50`), розбір через `CultureInfo.InvariantCulture`;
+  `12,50` вважається помилкою, а не числом 1250;
+- у файлі навмисно 3 пошкоджені рядки (12: мало колонок, 13: нечислова ціна, 14: порожня назва) — це тестові дані.
+
+`data/sample.json` — масив `{ "id", "name", "price" }`, регістр імен властивостей не важливий;
+`data/mixed.csv` — рядки з префіксом типу: `P;id;назва;ціна`, `C;id;ім'я[;email]`.
+
+### Що де лежить
+
+- `Core/Dto/` — `ProductDto`, `CustomerDto`, `ImportResult<T>`, `MixedImportResult`;
+- `Core/Import/` — імпортери; розбір рядка — у Core, а не в `Program.cs`.
