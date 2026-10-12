@@ -5,6 +5,18 @@ using Core;
 using Core.Dto;
 using Core.Import;
 
+if (args.Contains("--orders"))
+{
+    RunOrderDomainDemo();
+    return 0;
+}
+
+if (args.Contains("--store"))
+{
+    RunOrderStoreDemo(args.Contains("--file"));
+    return 0;
+}
+
 bool json = args.Contains("--json");
 string? pathArg = args.FirstOrDefault(a => !a.StartsWith("--"));
 
@@ -114,4 +126,71 @@ static void PrintEnvironment(EnvironmentReport report, bool json)
     Console.WriteLine($"Поточний каталог   : {report.CurrentDirectory}");
     Console.WriteLine(new string('-', 52));
     Console.WriteLine("Предметна область: Замовлення (Customer, Product, Order, OrderLine)");
+}
+static void RunOrderDomainDemo()
+{
+    Console.WriteLine(" Сценарій 1: успіх ");
+    var order = Core.Domain.Order.Create("ORD-TEST-1", "CUST-01");
+    Console.WriteLine(order);
+    order.AddLine("SKU-001", "Цемент М400 25кг", 185.00m, 10);
+    order.AddLine("SKU-002", "Пісок будівельний, м3", 420.00m, 2);
+    Console.WriteLine(order);
+    order.Confirm();
+    Console.WriteLine(order);
+
+    Console.WriteLine();
+    Console.WriteLine(" Сценарій 2: порушення інваріантів ");
+
+    TryDo("додавання рядка в підтверджене замовлення", () => order.AddLine("SKU-003", "Цегла", 7.50m, 100));
+    TryDo("від'ємна кількість у рядку", () => Core.Domain.Order.Create("ORD-TEST-2", "CUST-02").AddLine("SKU-001", "Цемент", 185.00m, -5));
+    TryDo("порожній customerId", () => Core.Domain.Order.Create("ORD-TEST-3", "   "));
+
+    var empty = Core.Domain.Order.Create("ORD-TEST-4", "CUST-03");
+    TryDo("підтвердження порожнього замовлення", () => empty.Confirm());
+
+    static void TryDo(string title, Action action)
+    {
+        try
+        {
+            action();
+            Console.WriteLine($"  {title}: виняток НЕ спрацював — інваріант відсутній!");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"  {title}: {ex.GetType().Name} — {ex.Message}");
+        }
+    }
+}
+
+static void RunOrderStoreDemo(bool useFile)
+{
+    string dataPath = Path.Combine(AppContext.BaseDirectory, "data", "orders.json");
+    Core.Abstractions.IOrderStore store = useFile
+        ? new Core.Storage.FileOrderStore(dataPath)
+        : new Core.Storage.InMemoryOrderStore(Core.SampleData.Orders());
+
+    var service = new Core.Services.OrderService(store);
+    Console.WriteLine($"Сховище: {store.GetType().Name}");
+
+    var created = service.CreateOrder("CUST-DEMO");
+    service.AddLine(created.Id, "SKU-101", "Кабель UTP cat6, м", 14.50m, 50);
+    service.AddLine(created.Id, "SKU-102", "Розетка RJ45, шт", 35.00m, 12);
+    service.Confirm(created.Id);
+
+    Console.WriteLine();
+    Console.WriteLine(" Усі замовлення у сховищі ");
+    foreach (var o in service.All())
+        Console.WriteLine($"  {o}");
+
+    Console.WriteLine();
+    Console.WriteLine(" Сценарій відмови ");
+    try
+    {
+        service.AddLine("NO-SUCH-ID", "SKU-999", "Щось", 1.00m, 1);
+        Console.WriteLine("  виняток НЕ спрацював — помилка в логіці сервісу!");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"  {ex.GetType().Name} — {ex.Message}");
+    }
 }

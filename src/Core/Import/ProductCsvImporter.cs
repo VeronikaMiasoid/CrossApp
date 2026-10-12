@@ -43,7 +43,6 @@ public static class ProductCsvImporter
     private static ParseOutcome ParseLine(string line)
     {
         string[] parts = line.Split(Separator, StringSplitOptions.TrimEntries);
-
         return parts switch
         {
             { Length: < 3 } => new ParseFailed($"очікую 3 колонки, отримав {parts.Length}"),
