@@ -8,7 +8,12 @@ public static class ProductCsvImporter
     // Роздільник — крапка з комою: не конфліктує з комою в назвах товарів.
     private const char Separator = ';';
 
-    public static ImportResult<ProductDto> Load(string path)
+    public static ImportResult<ProductDto> Load(string path) => Load(path, null);
+
+    // Додаткове завдання тижня 6: Action<string> як параметр методу. Викликач сам вирішує,
+    // що робити з повідомленням про пропущений рядок (друкувати, рахувати, писати в журнал),
+    // а імпортер нічого не знає про Console.
+    public static ImportResult<ProductDto> Load(string path, Action<string>? onSkipped)
     {
         var items = new List<ProductDto>();
         var errors = new List<string>();
@@ -32,8 +37,12 @@ public static class ProductCsvImporter
                     items.Add(ok.Value);
                     break;
                 case ParseFailed failed:
-                    errors.Add($"рядок {number}: {failed.Reason}");
+                {
+                    string message = $"рядок {number}: {failed.Reason}";
+                    errors.Add(message);
+                    onSkipped?.Invoke(message);
                     break;
+                }
             }
         }
 

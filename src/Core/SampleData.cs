@@ -1,4 +1,5 @@
 using Core.Domain;
+using Core.Dto;
 
 namespace Core;
 
@@ -67,6 +68,21 @@ public static class SampleData
 
         return list;
     }
+
+    // Клієнти для звітів із Join/GroupJoin (ті самі id, що й у замовленнях).
+    public static List<CustomerDto> Customers() =>
+    [
+        new("C-01", "ТОВ «Будмайстер»", "buy@budmaister.ua"),
+        new("C-02", "ФОП Коваль Іван", null),
+        new("C-03", "ПП «Дах-Сервіс»", "office@dah.ua"),
+        new("C-04", "ТОВ «Фасад-Плюс»", "info@fasad.ua"),
+        new("C-05", "Петренко Олена", "olena@mail.ua"),
+        new("C-06", "ТОВ «Мурувальник»", null),
+        new("C-07", "ФОП Мельник Оксана", "melnyk@mail.ua"),
+        new("C-08", "ПП «Новосел»", "novosel@mail.ua"),
+        new("C-09", "ТОВ «Тепла оселя»", "teplo@oselya.ua"),
+        new("C-10", "Гнатюк Андрій", null),
+    ];
 
     private static Order Build(string id, string customerId, bool confirm,
         params (string ProductId, string Name, decimal Price, int Qty)[] lines)
